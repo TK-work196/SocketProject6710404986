@@ -12,6 +12,14 @@ DATABASE = {
     'HAPPY': {
         'DEF': 'Feeling or showing pleasure or contentment.',
         'SYN': 'Joyful, Cheerful, Glad'
+    },
+    'SAD': {
+        'DEF': 'Not so sure.',
+        'SYN': 'Sorrowful, Regret'
+    },
+    'HIGH': {
+        'DEF': 'Long or Tall.',
+        'SYN': 'Tipsy.'
     }
 }
 
@@ -44,32 +52,40 @@ def process_request(request_text):
 
 def start_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        
         s.bind((HOST, PORT))
         s.listen()
         print(f"[*] Server listening on {HOST}:{PORT} using TCP...")
+        print("[*] Press 'Ctrl+C' in this terminal to safely shut down the server.")
         
-        while True:
-            conn, addr = s.accept()
-            with conn:
-                print(f"\n[+] Connected by {addr}")
-                while True:
-                    data = conn.recv(1024)
-                    if not data:
-                        break
+        try:
+            while True:
+                conn, addr = s.accept()
+                with conn:
+                    print(f"\n[+] Connected by {addr}")
+                    while True:
+                        data = conn.recv(1024)
+                        if not data:
+                            break
+                            
+                        request_str = data.decode('utf-8')
+                        print(f"[-] Received Request: {request_str.strip()}")
                         
-                    request_str = data.decode('utf-8')
-                    print(f"[-] Received Request: {request_str.strip()}")
-                    
-                    response_str = process_request(request_str)
-                    
-                    status_line = response_str.split('\n')[0]
-                    print(f"[-] Sending Response Status: {status_line}")
-                    
-                    conn.sendall(response_str.encode('utf-8'))
-                    
-                    if "201 GOODBYE" in response_str:
-                        print(f"[*] Closing connection with {addr}")
-                        break
+                        response_str = process_request(request_str)
+                        
+                        status_line = response_str.split('\n')[0]
+                        print(f"[-] Sending Response Status: {status_line}")
+                        
+                        conn.sendall(response_str.encode('utf-8'))
+                        
+                        if "201 GOODBYE" in response_str:
+                            print(f"[*] Closing connection with {addr}")
+                            break
+                            
+        except KeyboardInterrupt:
+            print("\n\n[!] KeyboardInterrupt detected.")
+            print("[*] Shutting down the server.")
 
 if __name__ == "__main__":
     start_server()
